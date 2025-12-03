@@ -1,0 +1,186 @@
+[
+  {
+    "filename": "16110338300_20251001.PDF",
+    "company_name": "Dube Tradeport Corporation",
+    "account_number": "1611033830025",
+    "tax_invoice_number": "1611033830025",
+    "invoice_date": null,
+    "due_date": "2025/10/22",
+    "total_current_charges": 524354.84,
+    "total_amount_due": 524354.84,
+    "total_energy_kwh": 2191270.8,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [
+      "Carbon",
+      "Energy"
+    ],
+    "line_items": [],
+    "sixMonthHistory": [
+      {
+        "month_label": "May 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      },
+      {
+        "month_label": "Jun 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      },
+      {
+        "month_label": "Jul 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      },
+      {
+        "month_label": "Aug 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      },
+      {
+        "month_label": "Sep 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      },
+      {
+        "month_label": "Oct 2025",
+        "energyKWh": 365211.8,
+        "total_current_charges": 87392.47333333333,
+        "total_amount_due": 87392.47333333333
+      }
+    ]
+  },
+  {
+    "filename": "AfricaESG_EnergyReport.pdf",
+    "company_name": null,
+    "account_number": null,
+    "tax_invoice_number": null,
+    "invoice_date": null,
+    "due_date": null,
+    "total_current_charges": null,
+    "total_amount_due": null,
+    "total_energy_kwh": null,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [],
+    "line_items": [],
+    "sixMonthHistory": []
+  },
+  {
+    "filename": "16110338502_20251001.PDF",
+    "company_name": "Dube Tradeport Corporation",
+    "account_number": "1611033850225",
+    "tax_invoice_number": "1611033850225",
+    "invoice_date": null,
+    "due_date": "2025/10/22",
+    "total_current_charges": 110389.24,
+    "total_amount_due": 110389.24,
+    "total_energy_kwh": 397099.6,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [
+      "Carbon",
+      "Energy"
+    ],
+    "line_items": [],
+    "sixMonthHistory": []
+  },
+  {
+    "filename": "16110338401_20251001.PDF",
+    "company_name": "Dube Tradeport Corporation",
+    "account_number": "1611033840125",
+    "tax_invoice_number": "1611033840125",
+    "invoice_date": null,
+    "due_date": "2025/10/22",
+    "total_current_charges": 546180.75,
+    "total_amount_due": 546180.75,
+    "total_energy_kwh": 2469619.2,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [
+      "Carbon",
+      "Energy"
+    ],
+    "line_items": [],
+    "sixMonthHistory": []
+  },
+  {
+    "filename": "16110338300_20251001.PDF",
+    "company_name": "Dube Tradeport Corporation",
+    "account_number": "1611033830025",
+    "tax_invoice_number": "1611033830025",
+    "invoice_date": null,
+    "due_date": "2025/10/22",
+    "total_current_charges": 524354.84,
+    "total_amount_due": 524354.84,
+    "total_energy_kwh": 2191270.8,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [
+      "Carbon",
+      "Energy"
+    ],
+    "line_items": [],
+    "sixMonthHistory": []
+  },
+  {
+    "filename": "16110338603_20251001.PDF",
+    "company_name": "Dube Tradeport Corporation",
+    "account_number": "1611033860325",
+    "tax_invoice_number": "1611033860325",
+    "invoice_date": null,
+    "due_date": "2025/10/22",
+    "total_current_charges": 186672.85,
+    "total_amount_due": 186672.85,
+    "total_energy_kwh": 747460.64,
+    "energy_kwh": null,
+    "energy_amount_r": null,
+    "power_kva": null,
+    "power_amount_r": null,
+    "water_kl": null,
+    "water_amount_r": null,
+    "waste_kg": null,
+    "waste_amount_r": null,
+    "categories": [
+      "Carbon",
+      "Energy"
+    ],
+    "line_items": [],
+    "sixMonthHistory": []
+  }
+]

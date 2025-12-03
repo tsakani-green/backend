@@ -1,0 +1,11 @@
+{
+  "company_name": "Excel Import",
+  "period": "Imported (aggregated from Excel)",
+  "carbon_emissions_tons": 71.1891,
+  "energy_consumption_mwh": 57.793,
+  "water_use_m3": 1742.1000000000001,
+  "waste_generated_tons": 18.071,
+  "fuel_litres": 7102.0,
+  "social_score_raw": 18.663684019832186,
+  "governance_score_raw": 45.27777777777778
+}
