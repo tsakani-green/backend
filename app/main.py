@@ -40,6 +40,7 @@ else:
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
+        "https://esg-dashboard-cznr.vercel.app",
         "*",
     ]
 
@@ -200,8 +201,17 @@ app.add_middleware(
 
 
 # ================== GLOBAL STATE ==================
-# MOVE THIS LINE DOWN - AFTER ALL MODEL DEFINITIONS
-# DEFAULT_ESG_INPUT will be defined below after the helper functions
+DEFAULT_ESG_INPUT = ESGInput(
+    company_name="Company",
+    period="FY2024",
+    carbon_emissions_tons=18500,
+    energy_consumption_mwh=1250,
+    water_use_m3=55000,
+    waste_generated_tons=180,
+    fuel_litres=50000,
+    social_score_raw=78,
+    governance_score_raw=82,
+)
 
 
 def load_last_esg_from_disk() -> ESGInput:
@@ -209,36 +219,14 @@ def load_last_esg_from_disk() -> ESGInput:
     Load last_esg_input from disk if available; fall back to DEFAULT_ESG_INPUT.
     """
     if not os.path.exists(LAST_ESG_JSON_PATH):
-        # Define DEFAULT_ESG_INPUT here since it's not defined yet at module level
-        return ESGInput(
-            company_name="Company",
-            period="FY2024",
-            carbon_emissions_tons=18500,
-            energy_consumption_mwh=1250,
-            water_use_m3=55000,
-            waste_generated_tons=180,
-            fuel_litres=50000,
-            social_score_raw=78,
-            governance_score_raw=82,
-        )
+        return DEFAULT_ESG_INPUT
     try:
         with open(LAST_ESG_JSON_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
         return ESGInput(**data)
     except Exception as exc:
         print(f"Failed to load {LAST_ESG_JSON_PATH}: {exc}")
-        # Define DEFAULT_ESG_INPUT here
-        return ESGInput(
-            company_name="Company",
-            period="FY2024",
-            carbon_emissions_tons=18500,
-            energy_consumption_mwh=1250,
-            water_use_m3=55000,
-            waste_generated_tons=180,
-            fuel_litres=50000,
-            social_score_raw=78,
-            governance_score_raw=82,
-        )
+        return DEFAULT_ESG_INPUT
 
 
 def save_last_esg_to_disk(esg_input: ESGInput) -> None:
@@ -295,19 +283,6 @@ last_invoice_summaries: List[InvoiceSummary] = []
 
 # latest manually uploaded logo (not from invoices)
 last_extracted_logo: Optional[str] = None
-
-# NOW define DEFAULT_ESG_INPUT after all functions that might need it
-DEFAULT_ESG_INPUT = ESGInput(
-    company_name="Company",
-    period="FY2024",
-    carbon_emissions_tons=18500,
-    energy_consumption_mwh=1250,
-    water_use_m3=55000,
-    waste_generated_tons=180,
-    fuel_litres=50000,
-    social_score_raw=78,
-    governance_score_raw=82,
-)
 
 
 # ================ LIVE AI (WebSocket) ================
