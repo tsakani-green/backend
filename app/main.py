@@ -182,8 +182,6 @@ class InvoiceSummary(BaseModel):
     sixMonthHistory: List[InvoiceMonthHistory] = Field(default_factory=list)
     # base64 PNG (no data: prefix) extracted from invoice if available
     logo_base64: Optional[str] = None
-    # full data URL the frontend can use directly as <img src="...">
-    supplier_logo_url: Optional[str] = None
 
 
 # ================== APP ==================
@@ -262,7 +260,7 @@ def load_last_esg_rows_from_disk() -> List[Dict[str, Any]]:
 
 def save_last_esg_rows_to_disk(rows: List[Dict[str, Any]]) -> None:
     """
-    Persist latest ESG raw rows to disk so charts can be built after restart.
+    Persist latest ESG raw rows to disk so charts can be rebuilt after restart.
     """
     try:
         with open(LAST_ESG_ROWS_PATH, "w", encoding="utf-8") as f:
@@ -701,8 +699,8 @@ def build_environmental_metrics_from_input(
             co2_col = None
 
             # 1) Exact candidates first
-            exact_carbon_cols = ["CO2 (t)", "Carbon Emissions (t)", "Emissions (tCO2e)"]
-            for candidate in exact_carbon_cols:
+            exact_candidates = ["CO2 (t)", "Carbon Emissions (t)", "Emissions (tCO2e)"]
+            for candidate in exact_candidates:
                 if candidate in df.columns:
                     co2_col = candidate
                     break
@@ -722,8 +720,7 @@ def build_environmental_metrics_from_input(
             else:
                 # 3) Fallback: compute from energy + fuel if possible
                 if energy_col or "Fuel (L)" in df.columns:
-                    # Electricity factor: Carbon (tCO2e) = Energy (kWh) × 0.99 / 1000
-                    EF_ELECTRICITY_T_PER_KWH = 0.99 / 1000.0
+                    EF_ELECTRICITY_T_PER_KWH = 0.0009
                     EF_FUEL_T_PER_L = 0.0027
 
                     energy_series = (
@@ -1088,8 +1085,7 @@ def build_esg_input_from_excel(content: bytes) -> Tuple[ESGInput, List[Dict[str,
 
     # 3) Fallback to energy + fuel if still zero
     if carbon == 0.0:
-        # Electricity factor: Carbon (tCO2e) = Energy (kWh) × 0.99 / 1000
-        EF_ELECTRICITY_T_PER_KWH = 0.99 / 1000.0
+        EF_ELECTRICITY_T_PER_KWH = 0.0009
         EF_FUEL_T_PER_L = 0.0027
         carbon = elec_kwh * EF_ELECTRICITY_T_PER_KWH + fuel_l * EF_FUEL_T_PER_L
 
@@ -1323,8 +1319,7 @@ def parse_previous_usage_history(full_text: str) -> List[InvoiceMonthHistory]:
     last_six = entries[-6:]  # latest 6 months
 
     # 6) Convert to InvoiceMonthHistory models, including per-month carbon
-    # Electricity factor: Carbon (tCO2e) = Energy (kWh) × 0.99 / 1000
-    EF_ELECTRICITY_T_PER_KWH = 0.99 / 1000.0
+    EF_ELECTRICITY_T_PER_KWH = 0.0009  # same factor as elsewhere
 
     history: List[InvoiceMonthHistory] = []
     for label, energy, rands in last_six:
@@ -1401,7 +1396,6 @@ def aggregate_invoice_environmental_metrics(
             "invoice_count": 0,
             "total_energy_kwh": 0.0,
             "total_current_charges": 0.0,
-            "display_total_charges": "R 0.00",
             "total_amount_due": 0.0,
             "avg_energy_kwh": 0.0,
             "avg_current_charges": 0.0,
@@ -1431,18 +1425,14 @@ def aggregate_invoice_environmental_metrics(
         total_current_charges / total_energy_kwh if total_energy_kwh > 0 else 0.0
     )
 
-    # Electricity factor for South Africa – Carbon (tCO2e) = Energy (kWh) × 0.99 / 1000
-    EF_ELECTRICITY_T_PER_KWH = 0.99 / 1000.0
+    # simple grid factor for South Africa – 0.0009 tCO2e per kWh
+    EF_ELECTRICITY_T_PER_KWH = 0.0009
     estimated_co2_tonnes = total_energy_kwh * EF_ELECTRICITY_T_PER_KWH
-
-    # Add formatted display of total charges for frontend
-    display_total_charges = f"R {total_current_charges:,.2f}"
 
     return {
         "invoice_count": invoice_count,
         "total_energy_kwh": round(total_energy_kwh, 2),
         "total_current_charges": round(total_current_charges, 2),
-        "display_total_charges": display_total_charges,
         "total_amount_due": round(total_amount_due, 2),
         "avg_energy_kwh": round(avg_energy_kwh, 2),
         "avg_current_charges": round(avg_current_charges, 2),
@@ -1463,15 +1453,14 @@ async def generate_invoice_environmental_insights(
     inv_count = aggregated.get("invoice_count", 0)
     total_kwh = aggregated.get("total_energy_kwh", 0.0)
     total_charges = aggregated.get("total_current_charges", 0.0)
-    display_charges = aggregated.get("display_total_charges", f"R {total_charges:,.2f}")
     blended_tariff = aggregated.get("blended_tariff_r_per_kwh", 0.0)
     est_co2 = aggregated.get("estimated_co2_tonnes", 0.0)
 
     fallback = [
         (
             f"Over the last {inv_count} electricity invoices, total energy "
-            f"consumption was {total_kwh:,.0f} kWh with current charges of {display_charges}, "
-            f"providing a clear recent energy cost baseline."
+            f"consumption was {total_kwh:,.0f} kWh with current charges of approximately "
+            f"R {total_charges:,.2f}, providing a clear recent energy cost baseline."
         ),
         (
             f"The implied blended tariff is around R {blended_tariff:,.2f} per kWh, "
@@ -1592,9 +1581,9 @@ def extract_logo_from_pdf(pdf_content: bytes) -> Optional[str]:
         # Prefer square-ish, medium-size images on earlier pages
         images.sort(
             key=lambda x: (
-                abs(x["aspect_ratio"] - 1.0),  # closer to square
-                abs(x["area"] - 10000),  # around 100x100
-                x["page"],  # earlier page first
+                abs(x["aspect_ratio"] - 1.0),     # closer to square
+                abs(x["area"] - 10000),           # around 100x100
+                x["page"],                        # earlier page first
             )
         )
 
@@ -1799,116 +1788,39 @@ def parse_invoice_pdf(content: bytes, filename: str) -> InvoiceSummary:
         due_date = m.group(1).strip()
 
     # ---- Monetary amounts ----
-    def _extract_amount_from_text(text: str, patterns: List[str]) -> Optional[float]:
-        """
-        Extract monetary amount from text using multiple strategies.
-        """
-        # Strategy 1: Direct regex with patterns
+    def _find_amount(patterns: List[str]) -> Optional[float]:
         for pat in patterns:
-            # Pattern 1: Pattern followed by currency symbol and number
-            match = re.search(
-                r'(?:' + pat + r')\s*[:=]?\s*(?:R\s*)?([0-9]{1,3}(?:[,\s][0-9]{3})*(?:\.[0-9]{2})?)',
-                text,
-                flags=re.IGNORECASE
+            m_inner = re.search(
+                pat + r".*?([0-9][0-9.,]*)",
+                full_text,
+                flags=re.IGNORECASE | re.DOTALL,
             )
-            if match:
+            if m_inner:
+                raw = m_inner.group(1)
                 try:
-                    clean = match.group(1).replace(',', '').replace(' ', '')
-                    return float(clean)
+                    return float(raw.replace(",", ""))
                 except ValueError:
-                    pass
-        
-        # Strategy 2: Look for the pattern line and find largest number nearby
-        lines = text.split('\n')
-        for i, line in enumerate(lines):
-            for pat in patterns:
-                if re.search(pat, line, re.IGNORECASE):
-                    # Search in current line and next 3 lines
-                    search_range = lines[i:i+4]
-                    best_amount = None
-                    for search_line in search_range:
-                        # Find all potential amounts in the line
-                        amounts = re.findall(
-                            r'(?:R\s*)?([0-9]{1,3}(?:[,\s][0-9]{3})*(?:\.[0-9]{2})?)',
-                            search_line
-                        )
-                        for amount in amounts:
-                            try:
-                                clean = amount.replace(',', '').replace(' ', '')
-                                num = float(clean)
-                                if best_amount is None or num > best_amount:
-                                    best_amount = num
-                            except ValueError:
-                                continue
-                    
-                    if best_amount is not None:
-                        return best_amount
-        
-        # Strategy 3: Look for common total patterns
-        total_patterns = [
-            r'Total\s*(?:Amount\s*)?(?:Due|Payable|Charges?)\s*(?:R\s*)?([0-9,\.\s]+)',
-            r'Grand\s*Total\s*(?:R\s*)?([0-9,\.\s]+)',
-            r'Invoice\s*Total\s*(?:R\s*)?([0-9,\.\s]+)',
-            r'Amount\s*(?:Due|Payable)\s*(?:R\s*)?([0-9,\.\s]+)'
-        ]
-        
-        for pattern in total_patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                try:
-                    clean = match.group(1).replace(',', '').replace(' ', '')
-                    return float(clean)
-                except ValueError:
-                    pass
-        
+                    continue
         return None
 
-    # Extract total current charges
-    total_current_charges = _extract_amount_from_text(
-        full_text,
+    total_current_charges = _find_amount(
         [
-            r'Total\s+Current\s+Charges',
-            r'Current\s+Charges',
-            r'Charges\s+Total',
-            r'Total\s+Charges'
+            r"Total\s+Current\s+Charges",
+            r"Current\s+Charges",
         ]
     )
 
-    # Extract total amount due (if different)
-    total_amount_due = _extract_amount_from_text(
-        full_text,
+    total_amount_due = _find_amount(
         [
-            r'Total\s+Amount\s+Due',
-            r'Amount\s+Due',
-            r'Total\s+Due',
-            r'Payable\s+Total',
-            r'Total\s+Payable'
+            r"Total\s+Amount\s+Due",
+            r"Amount\s+Due",
+            r"Total\s+Due",
         ]
     )
 
-    # If we found total_amount_due but not total_current_charges, use total_amount_due
+    # Fallback if only one was found
     if total_current_charges is None and total_amount_due is not None:
         total_current_charges = total_amount_due
-    # If we found total_current_charges but not total_amount_due, they're likely the same
-    elif total_current_charges is not None and total_amount_due is None:
-        total_amount_due = total_current_charges
-    # If both are None, look for any large number that could be a total
-    elif total_current_charges is None and total_amount_due is None:
-        # Find the largest number in the document (likely the invoice total)
-        all_numbers = re.findall(r'(?:R\s*)?([0-9]{1,3}(?:[,\s][0-9]{3})*(?:\.[0-9]{2})?)', full_text)
-        largest = None
-        for num_str in all_numbers:
-            try:
-                clean = num_str.replace(',', '').replace(' ', '')
-                num = float(clean)
-                if largest is None or num > largest:
-                    largest = num
-            except ValueError:
-                continue
-        
-        if largest is not None:
-            total_current_charges = largest
-            total_amount_due = largest
 
     # ---- Energy (kWh) ----
     total_energy_kwh = None
@@ -1931,11 +1843,6 @@ def parse_invoice_pdf(content: bytes, filename: str) -> InvoiceSummary:
     except Exception as logo_error:
         print(f"Logo extraction failed for {filename}: {logo_error}")
 
-    # Build data URL for frontend, if we have a logo
-    supplier_logo_url: Optional[str] = None
-    if logo_base64:
-        supplier_logo_url = f"data:image/png;base64,{logo_base64}"
-
     return InvoiceSummary(
         filename=filename,
         company_name=company,
@@ -1949,7 +1856,6 @@ def parse_invoice_pdf(content: bytes, filename: str) -> InvoiceSummary:
         categories=categories,
         sixMonthHistory=six_month_history,
         logo_base64=logo_base64,
-        supplier_logo_url=supplier_logo_url,
     )
 
 
@@ -2379,15 +2285,14 @@ async def get_company_logo():
     """
     global last_invoice_summaries, last_extracted_logo, last_esg_input
 
-    # Prefer the most recent invoice that has a logo (supplier_logo_url or logo_base64) and company name
+    # Prefer the most recent invoice that has a logo and company name
     if last_invoice_summaries:
         for invoice in last_invoice_summaries:
-            if (invoice.supplier_logo_url or invoice.logo_base64) and invoice.company_name:
-                logo_url = invoice.supplier_logo_url or f"data:image/png;base64,{invoice.logo_base64}"
+            if invoice.logo_base64 and invoice.company_name:
                 return {
                     "success": True,
                     "company_name": invoice.company_name,
-                    "logo": logo_url,
+                    "logo": f"data:image/png;base64,{invoice.logo_base64}",
                     "source": invoice.filename,
                 }
 
