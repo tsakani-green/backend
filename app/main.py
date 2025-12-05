@@ -40,6 +40,7 @@ else:
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
+        "https://esg-dashboard-cznr.vercel.app",
         "*",
     ]
 
@@ -50,6 +51,9 @@ LAST_ESG_JSON_PATH = os.path.join(DATA_DIR, "last_esg_input.json")
 
 # Where to store the raw uploaded ESG rows (for charts)
 LAST_ESG_ROWS_PATH = os.path.join(DATA_DIR, "last_esg_uploaded_rows.json")
+
+# Where to store invoice summaries (single + bulk) on disk
+LAST_INVOICES_JSON_PATH = os.path.join(DATA_DIR, "last_invoices.json")
 
 # Optional OpenAI client (Chat Completions)
 try:
@@ -184,6 +188,43 @@ class InvoiceSummary(BaseModel):
     logo_base64: Optional[str] = None
 
 
+# ================== INVOICE PERSISTENCE HELPERS ==================
+def load_last_invoices_from_disk() -> List[InvoiceSummary]:
+    """
+    Load previously parsed invoice summaries from disk.
+    """
+    if not os.path.exists(LAST_INVOICES_JSON_PATH):
+        return []
+    try:
+        with open(LAST_INVOICES_JSON_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, list):
+            return []
+        invoices: List[InvoiceSummary] = []
+        for item in data:
+            try:
+                invoices.append(InvoiceSummary(**item))
+            except Exception:
+                # Skip any bad record rather than failing the whole load
+                continue
+        return invoices
+    except Exception as exc:
+        print(f"Failed to load {LAST_INVOICES_JSON_PATH}: {exc}")
+        return []
+
+
+def save_last_invoices_to_disk(invoices: List[InvoiceSummary]) -> None:
+    """
+    Persist invoice summaries to disk so that they survive server restarts.
+    """
+    try:
+        serialisable = [inv.dict() for inv in invoices]
+        with open(LAST_INVOICES_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(serialisable, f, indent=2)
+    except Exception as exc:
+        print(f"Failed to save {LAST_INVOICES_JSON_PATH}: {exc}")
+
+
 # ================== APP ==================
 app = FastAPI(
     title="AfricaESG.AI Backend",
@@ -277,8 +318,8 @@ last_insights: Optional[ESGInsights] = None
 # last uploaded ESG rows (for EnvironmentalCategory charts)
 last_esg_uploaded_rows: List[Dict[str, Any]] = load_last_esg_rows_from_disk()
 
-# store latest invoice summaries (single + bulk) for dashboard (in-memory only)
-last_invoice_summaries: List[InvoiceSummary] = []
+# store latest invoice summaries (single + bulk) for dashboard, persisted to disk
+last_invoice_summaries: List[InvoiceSummary] = load_last_invoices_from_disk()
 
 # latest manually uploaded logo (not from invoices)
 last_extracted_logo: Optional[str] = None
@@ -2394,6 +2435,9 @@ async def api_invoice_upload(file: UploadFile = File(...)):
     if len(last_invoice_summaries) > 200:
         last_invoice_summaries.pop()
 
+    # Persist updated invoices to disk
+    save_last_invoices_to_disk(last_invoice_summaries)
+
     # LIVE: invoice changed -> push update
     await push_live_ai_update()
 
@@ -2442,6 +2486,9 @@ async def api_invoice_bulk_upload(files: List[UploadFile] = File(...)):
     if len(last_invoice_summaries) > 200:
         last_invoice_summaries = last_invoice_summaries[:200]
 
+    # Persist updated invoices to disk
+    save_last_invoices_to_disk(last_invoice_summaries)
+
     # LIVE: invoices changed -> push update
     await push_live_ai_update()
 
@@ -2459,7 +2506,8 @@ async def api_invoices(last_months: Optional[int] = None):
 
     - If last_months is provided (e.g. ?last_months=6), only invoices with
       invoice_date in that rolling window are returned.
-    - Otherwise, all invoices in memory are returned.
+    - Otherwise, all invoices (including those loaded from disk at startup)
+      are returned.
     """
     if not last_invoice_summaries:
         return []
